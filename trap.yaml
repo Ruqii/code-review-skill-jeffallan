@@ -1,0 +1,9 @@
+name: code-review-skill-jeffallan
+profile:
+  model: [claude-sonnet-4-6]
+  framework: [Jeffallan/claude-skills]
+cmd: uv run python solution.py
+timeout: 300
+tasks:
+  python-bugfix-diff:
+    source: ../trapstreet-tasks/tasks/code_review_skill/python_bugfix_diff
