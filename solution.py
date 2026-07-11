@@ -67,7 +67,7 @@ def main() -> int:
     msg = client.messages.create(
         model=MODEL,
         max_tokens=1024,
-        system=SYSTEM,
+        system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": question}],
     )
     answer = next((b.text for b in msg.content if b.type == "text"), "").strip()
