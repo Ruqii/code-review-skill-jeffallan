@@ -1,11 +1,11 @@
-"""Code-review Claude Skill solution: loads a real community SKILL.md
-(sitting next to this script) and applies it to review the one file shown
-in each case's question.txt, via a direct Anthropic API call.
+"""Code-review Claude Skill solution: loads the real community SKILL.md
+(sitting next to this script) PLUS its full set of reference files (under
+references/), and applies them to review the one file shown in each case's
+question.txt, via a direct Anthropic API call.
 
-Note: the skill's own referenced companion files (per-language reference
-guides, bundled scripts) are not available in this environment -- the model
-is instructed to apply the skill's own inline guidance instead. This is a
-known, documented scope limitation of the eval, not a bug.
+All 6 files this skill's Reference Guide table points to are small and
+language-agnostic, so all are included -- this skill's full designed
+methodology is available, not just its top-level SKILL.md summary.
 """
 from __future__ import annotations
 
@@ -20,22 +20,38 @@ MODEL = os.environ.get("MODEL", "claude-sonnet-4-6")
 HERE = Path(__file__).resolve().parent
 SKILL_MD = (HERE / "SKILL.md").read_text()
 
-SYSTEM = f"""You must act EXACTLY as Claude would when the following Claude \
-Skill is loaded and active. This is a real Skill file (SKILL.md format). \
-Internalize its review methodology, principles, and process, and apply it \
-faithfully when reviewing the code the user shows you.
+REFERENCE_FILES = [
+    "references/review-checklist.md",
+    "references/common-issues.md",
+    "references/feedback-examples.md",
+    "references/report-template.md",
+    "references/spec-compliance-review.md",
+    "references/receiving-feedback.md",
+]
 
-Note: this skill may reference additional companion files (per-language \
-reference guides, bundled scripts) on demand -- those files are NOT \
-available in this environment. Apply the skill's own inline guidance and \
-general code-review judgment wherever it would normally consult a \
-referenced file.
+REFERENCE_BLOCK = "\n\n".join(
+    f"=== BEGIN {path} ===\n{(HERE / path).read_text()}\n=== END {path} ==="
+    for path in REFERENCE_FILES
+)
+
+SYSTEM = f"""You must act EXACTLY as Claude would when the following Claude \
+Skill is loaded and active. This is a real Skill file (SKILL.md format), \
+shown below along with the full text of every reference file its own \
+"Reference Guide" table points to. Internalize the skill's review \
+methodology, principles, and process -- including these reference files, \
+exactly as the skill's own dispatch table intends -- and apply it \
+faithfully when reviewing the code the user shows you.
 
 === BEGIN SKILL.md ===
 {SKILL_MD}
 === END SKILL.md ===
 
-Now apply this skill's review process to the code the user shows you. The \
+{REFERENCE_BLOCK}
+
+Now apply this skill's review process to the code the user shows you. \
+There is no PR description in this context (this is a single-file, \
+isolated review, not a full pull request) -- skip the "summarize PR \
+intent" checkpoint and proceed directly to reviewing the code shown. The \
 user's message is itself the full task specification, including the exact \
 required JSON output format -- follow it exactly. That JSON schema takes \
 precedence over any output template described in the skill above, since \
