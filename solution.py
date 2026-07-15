@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "anthropic",
+# ]
+# ///
 """Code-review Claude Skill solution: loads the real community SKILL.md
 (sitting next to this script) PLUS its full set of reference files (under
 references/), and applies them to review the one file shown in each case's
@@ -6,9 +12,16 @@ question.txt, via a direct Anthropic API call.
 All 6 files this skill's Reference Guide table points to are small and
 language-agnostic, so all are included -- this skill's full designed
 methodology is available, not just its top-level SKILL.md summary.
+
+Shared across every model variant in this repo: each variant's trap.yaml
+picks the model via a --model CLI argument baked directly into its cmd:
+line (never a MODEL env var -- keeps the leaderboard-reported model and the
+model actually run from ever drifting apart), e.g.
+``uv run ../solution.py --model claude-opus-4-8``.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -16,7 +29,6 @@ from pathlib import Path
 
 from anthropic import Anthropic
 
-MODEL = os.environ.get("MODEL", "claude-sonnet-4-6")
 HERE = Path(__file__).resolve().parent
 SKILL_MD = (HERE / "SKILL.md").read_text()
 
@@ -59,13 +71,17 @@ it's the actual task contract you're being graded against."""
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True)
+    args = parser.parse_args()
+
     manifest = json.loads(os.environ["TRAP_MANIFEST"])
     inputs_dir = Path(manifest["inputs_dir"])
     question = (inputs_dir / "question.txt").read_text()
 
     client = Anthropic(max_retries=10)
     msg = client.messages.create(
-        model=MODEL,
+        model=args.model,
         max_tokens=1024,
         system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": question}],
